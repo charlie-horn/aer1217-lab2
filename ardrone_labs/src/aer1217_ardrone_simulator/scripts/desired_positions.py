@@ -18,7 +18,7 @@ class ROSDesiredPositionGenerator(object):
     # write code here for desired position trajectory generator
     pass
 
-if __name__ == '__main__':
-    rospy.init_node('desired_position')
-    ROSDesiredPositionGenerator()
-    rospy.spin()
+# if __name__ == '__main__':
+#     rospy.init_node('desired_positions')
+#     ROSDesiredPositionGenerator()
+#     rospy.spin()
