@@ -17,8 +17,18 @@ from geometry_msgs.msg import TransformStamped, Twist
 class PositionController(object):
     """ROS interface for controlling the Parrot ARDrone in the Vicon Lab."""
     def __init__(self):
+        # Internal state
+        self.internal_state = TransformStamped()
+
+        # Subscribers
+
+        # Publishers
+
+
         ## Current State
+        
         # Position
+
         self.x = 0
         self.y = 0
         self.z = 0
@@ -26,12 +36,46 @@ class PositionController(object):
         self.pitch = 0
         self.yaw = 0
 
+        # Old position
+
+        self.x_old = 0
+        self.y_old = 0
+        self.z_old = 0
+        self.roll_old = 0
+        self.pitch_old = 0
+        self.yaw_old = 0
+
         # Velocity
 
-        # Acceleration
+        self.x_dot = 0
+        self.y_dot = 0
+        self.z_dot = 0
+        self.roll_dot = 0
+        self.pitch_dot = 0
+        self.yaw_dot = 0
         
+        # Old velocity
+
+        self.x_dot_old = 0
+        self.y_dot_old = 0
+        self.z_dot_old = 0
+        self.roll_dot_old = 0
+        self.pitch_dot_old = 0
+        self.yaw_dot_old = 0
+
+        # Acceleration
+
+        self.x_double_dot = 0
+        self.y_double_dot = 0
+        self.z_double_dot = 0
+        self.roll_double_dot = 0
+        self.pitch_double_dot = 0
+        self.yaw_double_dot = 0
+
         ## Desired State
+        
         # Position
+
         self.x_des = 0
         self.y_des = 0
         self.z_des = 0
@@ -41,69 +85,96 @@ class PositionController(object):
 
         # Velocity
 
+        self.x_dot_des = 0
+        self.y_dot_des = 0
+        self.z_dot_des = 0
+        self.roll_dot_des = 0
+        self.pitch_dot_des = 0
+        self.yaw_dot_des = 0
+        
         # Acceleration
 
-
+        self.x_double_dot = 0
+        self.y_double_dot = 0
+        self.z_double_dot = 0
+        self.roll_double_dot = 0
+        self.pitch_double_dot = 0
+        self.yaw_double_dot = 0
 
         return
 
-    def updateState(self, x, y, z, roll, pitch, yaw):
+    def updateState(self, dt):
+        self.updatePosition()
+        self.updateVelocity(dt)
+        self.updateAcceleration(dt)
+        return
+
+    def updatePosition(self):
         self.old_x = self.x
-        self.x = x
+        self.x = self.internal_state.transform.translation.x
         self.old_y = self.y
-        self.y = y
+        self.y = self.internal_state.transform.translation.y
         self.old_z = self.z
-        self.z = z
+        self.z = self.internal_state.transform.translation.z
         self.old_roll = self.roll
-        self.roll = roll
+        self.roll = self.internal_state.transform.rotation.x
         self.old_pitch = self.pitch
-        self.pitch = pitch
+        self.pitch = self.internal_state.transform.rotation.y
         self.old_yaw = self.yaw
-        self.yaw = yaw
-
-        self.updateAcceleration(thrust, roll, pitch)
+        self.yaw = self.internal_state.transform.rotation.z
 
         return
 
-    def updateAcceleration(self, thrust, roll, pitch):
-        self.x_double_dot = thrust*np.cos(pitch)*np.sin(roll)
-        self.y_double_dot = -thrust*np.sin(pitch)
-        self.z_double_dot = thrust*np.cos(roll)*cos(pitch)
+    def updateVelocity(self, dt):
+        self.old_x_dot = self.x_dot
+        self.x_dot = (self.x - self.old_x)/dt
+
+        self.old_y_dot = self.y_dot
+        self.y_dot = (self.y - self.old_y)/dt
+
+        self.old_z_dot = self.z_dot
+        self.z_dot = (self.z - self.old_z)/dt
+
+        self.old_roll_dot = self.roll_dot
+        self.roll_dot = (self.roll-self.old_roll)/dt
+
+        self.old_pitch_dot = self.pitch_dot
+        self.pitch_dot = (self.pitch - self.old_pitch)/dt
+
+        self.old_yaw_dot = self.yaw_dot
+        self.yaw_dot = (self.yaw - self.old_yaw)/dt
         return
 
-    def getDesiredState(self, x_des, y_des, z_des, yaw_des):
-        # Express dynamics in the inertial frame
-        
-        # Simplify by assuming 0 yaw
-        
-        # Express acceleration in terms of roll pitch and thrust
-        
-        # Express the commanded roll, pitch, and thrust in terms of commanded acceleration
+    def updateAcceleration(self, dt):
+        #self.x_double_dot = thrust*np.cos(pitch)*np.sin(roll)
+        #self.y_double_dot = -thrust*np.sin(pitch)
+        #self.z_double_dot = thrust*np.cos(roll)*cos(pitch)
 
-        # Calculate commanded accelerations by designing a second order system based on the error in positions and velocities (PD controller)
+        self.x_double_dot = (self.x_dot - self.x_dot_old)/dt
+        self.y_double_dot = (self.y_dot - self.y_dot_old)/dt
+        self.z_double_dot = (self.z_dot - self.z_dot_old)/dt
+        return
 
-        # Transform the commanded roll and pitch from inertial to body frame to account for non zero yaw
-        
+    def getDesiredState(self, x_des, y_des, z_des, yaw_des, dt):
+        self.updateState(dt)
+
         C_x = 1;
         C_y = 1;
         w_n_x = 1;
         w_n_y = 1;
         
-        x_double_dot_des = 2*C_x*w_n_x*(x_dot_des - x_dot) + w_n_x**2*(x_des - self.x)
-        y_double_dot_des = 2*C_y*w_n_y*(y_dot_des - y_dot) + w_n_y**2*(y_des - self.y)
+        self.x_double_dot_des = 2*C_x*w_n_x*(self.x_dot_des - self.x_dot) + w_n_x**2*(self.x_des - self.x)
+        self.y_double_dot_des = 2*C_y*w_n_y*(self.y_dot_des - self.y_dot) + w_n_y**2*(self.y_des - self.y)
         
         f = (self.z_double_dot - 9.8)/(np.cos(self.roll)*np.cos(self.pitch))
         
-        roll_des = np.arcsin(self.y_double_dot/f)
-        pitch_des = np.arcsin(self.x_double_dot/(f*np.cos(roll_des)))
+        self.roll_des = np.arcsin(self.y_double_dot/f)
+        self.pitch_des = np.arcsin(self.x_double_dot/(f*np.cos(self.roll_des)))
 
-        roll_des_base = roll_des*np.cos(self.yaw)+pitch_des*np.sin(self.yaw)
-        pitch_des_base = -roll_des*np.sin(self.yaw) + pitch_des*cos(self.yaw)
+        self.roll_des_base = self.roll_des*np.cos(self.yaw)+self.pitch_des*np.sin(self.yaw)
+        self.pitch_des_base = -self.roll_des*np.sin(self.yaw) + self.pitch_des*cos(self.yaw)
         
-        return roll_des_base, pitch_des_base, yaw_dot_des, z_dot_des
-
-
-
+        return self.roll_des_base, self.pitch_des_base, self.yaw_dot_des, self.z_dot_des
 
 
 
