@@ -117,11 +117,11 @@ class PositionController(object):
         self.old_z = self.z
         self.z = self.internal_state.transform.translation.z
         self.old_roll = self.roll
-        self.roll = self.internal_state.transform.rotation.x
+        self.roll = self.internal_state.transform.angular.x
         self.old_pitch = self.pitch
-        self.pitch = self.internal_state.transform.rotation.y
+        self.pitch = self.internal_state.transform.angular.y
         self.old_yaw = self.yaw
-        self.yaw = self.internal_state.transform.rotation.z
+        self.yaw = self.internal_state.transform.angular.z
 
         return
 
@@ -162,6 +162,8 @@ class PositionController(object):
         C_y = 1;
         w_n_x = 1;
         w_n_y = 1;
+        yaw_P_gain = 1;
+        z_P_gain = 1;
         
         self.x_double_dot_des = 2*C_x*w_n_x*(self.x_dot_des - self.x_dot) + w_n_x**2*(self.x_des - self.x)
         self.y_double_dot_des = 2*C_y*w_n_y*(self.y_dot_des - self.y_dot) + w_n_y**2*(self.y_des - self.y)
@@ -174,6 +176,9 @@ class PositionController(object):
         self.roll_des_base = self.roll_des*np.cos(self.yaw)+self.pitch_des*np.sin(self.yaw)
         self.pitch_des_base = -self.roll_des*np.sin(self.yaw) + self.pitch_des*cos(self.yaw)
         
+        self.yaw_dot_des = self.yaw_dot + yaw_P_gain*(yaw_des - self.yaw)
+        self.z_dot_des = self.z_dot + z_P_gain*(z_des - self.z)
+
         return self.roll_des_base, self.pitch_des_base, self.yaw_dot_des, self.z_dot_des
 
 
