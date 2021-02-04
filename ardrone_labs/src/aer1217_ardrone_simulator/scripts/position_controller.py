@@ -156,14 +156,22 @@ class PositionController(object):
         return
 
     def getDesiredState(self, x_des, y_des, z_des, yaw_des, dt):
+        # Get time since last call
+        self.old_time = self.current_time
+        self.current_time = rospy.get_time()
+        dt = self.current_time - self.old_time
+        
+        # Update state variables
         self.updateState(dt)
-
-        C_x = 1;
-        C_y = 1;
-        w_n_x = 1;
-        w_n_y = 1;
-        yaw_P_gain = 1;
-        z_P_gain = 1;
+        
+        rise_time = 10;
+        settling_time = 20;
+        w_n_x = rise_time/1.8;
+        w_n_y = rise_time/1.8;
+        C_x = 4.6/(w_n_x*settling_time);
+        C_y = 4.6/(w_n_y*settling_time);
+        yaw_dot_P_gain = 1;
+        z_dot_P_gain = 1;
         
         self.x_double_dot_des = 2*C_x*w_n_x*(self.x_dot_des - self.x_dot) + w_n_x**2*(self.x_des - self.x)
         self.y_double_dot_des = 2*C_y*w_n_y*(self.y_dot_des - self.y_dot) + w_n_y**2*(self.y_des - self.y)
@@ -176,8 +184,8 @@ class PositionController(object):
         self.roll_des_base = self.roll_des*np.cos(self.yaw)+self.pitch_des*np.sin(self.yaw)
         self.pitch_des_base = -self.roll_des*np.sin(self.yaw) + self.pitch_des*cos(self.yaw)
         
-        self.yaw_dot_des = self.yaw_dot + yaw_P_gain*(yaw_des - self.yaw)
-        self.z_dot_des = self.z_dot + z_P_gain*(z_des - self.z)
+        self.yaw_dot_des = yaw_dot_P_gain*(yaw_des - self.yaw)
+        self.z_dot_des = z_dot_P_gain*(z_des - self.z)
 
         return self.roll_des_base, self.pitch_des_base, self.yaw_dot_des, self.z_dot_des
 
