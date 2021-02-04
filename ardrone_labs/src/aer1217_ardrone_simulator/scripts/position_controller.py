@@ -1,3 +1,24 @@
+# #!/usr/bin/env python2
+# 
+# """Class for writing position controller."""
+# 
+# from __future__ import division, print_function, absolute_import
+# 
+# # Import ROS libraries
+# import roslib
+# import rospy
+# import numpy as np
+# 
+# # Import class that computes the desired positions
+# from tf.transformations import euler_from_quaternion
+# from geometry_msgs.msg import TransformStamped, Twist
+# 
+# 
+# class PositionController(object):
+#     """ROS interface for controlling the Parrot ARDrone in the Vicon Lab."""
+#     # write code here for position controller
+#     pass
+
 #!/usr/bin/env python2
 
 """Class for writing position controller."""
@@ -103,25 +124,36 @@ class PositionController(object):
 
         return
 
-    def updateState(self, dt):
-        self.updatePosition()
+    def updateState(self, currentPosition, currentOrientation, dt):
+        self.updatePosition(currentPosition, currentOrientation)
         self.updateVelocity(dt)
         self.updateAcceleration(dt)
         return
 
-    def updatePosition(self):
+    def updatePosition(self, currentPosition, currentOrientation):
         self.old_x = self.x
-        self.x = self.internal_state.transform.translation.x
+        #self.x = self.internal_state.transform.translation.x
+        self.x = currentPosition.x
+        
         self.old_y = self.y
-        self.y = self.internal_state.transform.translation.y
+        #self.y = self.internal_state.transform.translation.y
+        self.y = currentPosition.y
+        
         self.old_z = self.z
-        self.z = self.internal_state.transform.translation.z
+        #self.z = self.internal_state.transform.translation.z
+        self.z = currentPosition.z
+        
         self.old_roll = self.roll
-        self.roll = self.internal_state.transform.rotation.x
+        #self.roll = self.internal_state.transform.angular.x
+        self.roll = currentOrientation[0]
+        
         self.old_pitch = self.pitch
-        self.pitch = self.internal_state.transform.rotation.y
+        #self.pitch = self.internal_state.transform.angular.y
+        self.pitch = currentOrientation[1]
+        
         self.old_yaw = self.yaw
-        self.yaw = self.internal_state.transform.rotation.z
+        #self.yaw = self.internal_state.transform.angular.z
+        self.yaw = currentOrientation[2]
 
         return
 
@@ -155,13 +187,15 @@ class PositionController(object):
         self.z_double_dot = (self.z_dot - self.z_dot_old)/dt
         return
 
-    def getDesiredState(self, x_des, y_des, z_des, yaw_des, dt):
-        self.updateState(dt)
+    def getDesiredState(self, currentPosition, currentOrientation, x_des, y_des, z_des, yaw_des, dt):
+        self.updateState(currentPosition, currentOrientation, dt)
 
-        C_x = 1;
-        C_y = 1;
-        w_n_x = 1;
-        w_n_y = 1;
+        C_x = 0.01;
+        C_y = 0.01;
+        w_n_x = 0.01;
+        w_n_y = 0.01;
+        yaw_P_gain = 0.01;
+        z_P_gain = 0.1;
         
         self.x_double_dot_des = 2*C_x*w_n_x*(self.x_dot_des - self.x_dot) + w_n_x**2*(self.x_des - self.x)
         self.y_double_dot_des = 2*C_y*w_n_y*(self.y_dot_des - self.y_dot) + w_n_y**2*(self.y_des - self.y)
@@ -172,9 +206,19 @@ class PositionController(object):
         self.pitch_des = np.arcsin(self.x_double_dot/(f*np.cos(self.roll_des)))
 
         self.roll_des_base = self.roll_des*np.cos(self.yaw)+self.pitch_des*np.sin(self.yaw)
-        self.pitch_des_base = -self.roll_des*np.sin(self.yaw) + self.pitch_des*cos(self.yaw)
+        self.pitch_des_base = -self.roll_des*np.sin(self.yaw) + self.pitch_des*np.cos(self.yaw)
         
-        return self.roll_des_base, self.pitch_des_base, self.yaw_dot_des, self.z_dot_des
+        self.yaw_dot_des = self.yaw_dot + yaw_P_gain*(yaw_des - self.yaw)
+        self.z_dot_des = self.z_dot + z_P_gain*(z_des - self.z)
+        
+        msg = Twist()
+        msg.linear.x = self.roll_des_base
+        msg.linear.y = self.pitch_des_base
+        msg.linear.z = self.z_dot_des
+        msg.angular.z = self.yaw_dot_des
+
+        #return self.roll_des_base, self.pitch_des_base, self.yaw_dot_des, self.z_dot_des
+        return msg
 
 
 
