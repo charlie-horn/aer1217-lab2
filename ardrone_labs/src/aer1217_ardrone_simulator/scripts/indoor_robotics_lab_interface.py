@@ -35,6 +35,7 @@ class ROSLabInterface(object):
     def __init__(self):
         """Initialize the ROSLabInterface class."""
         
+        self.onboard_controller = ARDroneOnboardController()
         # Publishers
         self.pub_vel_prop = rospy.Publisher('/aer1217_ardrone/vel_prop', 
                                             MotorCommands, queue_size=300)
@@ -64,7 +65,7 @@ class ROSLabInterface(object):
         self.onboard_loop_frequency = 200.
         
         # Create an onboard controller for calculation of the motor commands
-        self.onboard_controller = ARDroneOnboardController()
+        #self.onboard_controller = ARDroneOnboardController()
         
         # Run this ROS node at the onboard loop frequency
         self.pub_prop_vel = rospy.Timer(rospy.Duration(1. / 

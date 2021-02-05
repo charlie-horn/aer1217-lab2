@@ -74,9 +74,9 @@ if __name__ == '__main__':
     ardrone.time_stamp = ardrone.get_time()
     
     #first test
-    x_des = 1
-    y_des = 0
-    z_des = 1
+    x_des = 4
+    y_des = 4
+    z_des = 4
     yaw_des = 0
     
     try:

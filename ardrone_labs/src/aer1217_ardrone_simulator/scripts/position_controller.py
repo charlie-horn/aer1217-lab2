@@ -59,12 +59,12 @@ class PositionController(object):
 
         # Old position
 
-        self.x_old = 0
-        self.y_old = 0
-        self.z_old = 0
-        self.roll_old = 0
-        self.pitch_old = 0
-        self.yaw_old = 0
+        self.old_x = 0
+        self.old_y = 0
+        self.old_z = 0
+        self.old_roll = 0
+        self.old_pitch = 0
+        self.old_yaw = 0
 
         # Velocity
 
@@ -77,12 +77,12 @@ class PositionController(object):
         
         # Old velocity
 
-        self.x_dot_old = 0
-        self.y_dot_old = 0
-        self.z_dot_old = 0
-        self.roll_dot_old = 0
-        self.pitch_dot_old = 0
-        self.yaw_dot_old = 0
+        self.old_x_dot = 0
+        self.old_y_dot = 0
+        self.old_z_dot = 0
+        self.old_roll_dot = 0
+        self.old_pitch_dot = 0
+        self.old_yaw_dot = 0
 
         # Acceleration
 
@@ -182,12 +182,13 @@ class PositionController(object):
         #self.y_double_dot = -thrust*np.sin(pitch)
         #self.z_double_dot = thrust*np.cos(roll)*cos(pitch)
 
-        self.x_double_dot = (self.x_dot - self.x_dot_old)/dt
-        self.y_double_dot = (self.y_dot - self.y_dot_old)/dt
-        self.z_double_dot = (self.z_dot - self.z_dot_old)/dt
+        self.x_double_dot = (self.x_dot - self.old_x_dot)/dt
+        self.y_double_dot = (self.y_dot - self.old_y_dot)/dt
+        self.z_double_dot = (self.z_dot - self.old_z_dot)/dt
         return
 
     def getDesiredState(self, currentPosition, currentOrientation, x_des, y_des, z_des, yaw_des, dt):
+
         self.updateState(currentPosition, currentOrientation, dt)
 
 #         C_x = 0.01;
@@ -217,22 +218,23 @@ class PositionController(object):
         w_n_y = rise_time/1.8;
         C_x = 4.6/(w_n_x*settling_time);
         C_y = 4.6/(w_n_y*settling_time);
-        yaw_dot_P_gain = 0.01;
-        z_dot_P_gain = 0.9;
+        yaw_dot_P_gain = 1;
+        z_dot_P_gain = 0.1;
         
         self.x_double_dot_des = 2*C_x*w_n_x*(self.x_dot_des - self.x_dot) + pow(w_n_x, 2)*(self.x_des - self.x)
         self.y_double_dot_des = 2*C_y*w_n_y*(self.y_dot_des - self.y_dot) + pow(w_n_y, 2)*(self.y_des - self.y)
         
         f = (self.z_double_dot - 9.8)/(np.cos(self.roll)*np.cos(self.pitch))
         
-        self.roll_des = np.arcsin(self.y_double_dot/f) 
-        self.pitch_des = np.arcsin(self.x_double_dot/(f*np.cos(self.roll_des))) # this line causes a warning that the argument to arcsin is invalid
+        self.roll_des = np.arcsin(-self.y_double_dot/(f+1e-8)) 
+        self.pitch_des = np.arcsin(self.x_double_dot/(f*np.cos(self.roll_des)+1e-8)) # this line causes a warning that the argument to arcsin is invalid - could be a division by 0 in some cases. added a small term to avoid this
 
         self.roll_des_base = self.roll_des*np.cos(self.yaw)+self.pitch_des*np.sin(self.yaw)
         self.pitch_des_base = -self.roll_des*np.sin(self.yaw) + self.pitch_des*np.cos(self.yaw)
         
-        self.roll_des_base = 0
-        self.pitch_des_base = 0
+        #self.roll_des_base = 0
+
+        #self.pitch_des_base = 0
             
         self.yaw_dot_des = yaw_dot_P_gain*(yaw_des - self.yaw)
         self.z_dot_des = z_dot_P_gain*(z_des - self.z)
@@ -245,7 +247,7 @@ class PositionController(object):
         msg.linear.y = max(msg.linear.y,-1.0)
         
         msg.linear.z = self.z_dot_des
-        msg.angular.z = self.yaw_des
+        msg.angular.z = self.yaw_dot_des
 
         #return self.roll_des_base, self.pitch_des_base, self.yaw_dot_des, self.z_dot_des
         return msg
