@@ -32,7 +32,7 @@ class ROSControllerNode(object):
     # publish to /cmd_vel topic
     # subscribe to /vicon/ARDroneCarre/ARDroneCarre for position and attitude feedback
     def __init__(self):
-        self.rate = rospy.Rate(100)
+        self.rate = rospy.Rate(500)
         self.time_stamp = 0
         #Subscribers
         self.vicon_topic = '/vicon/ARDroneCarre/ARDroneCarre'
@@ -74,8 +74,8 @@ if __name__ == '__main__':
     ardrone.time_stamp = ardrone.get_time()
     
     #first test
-    x_des = 0.5
-    y_des = 0.5
+    x_des = 1
+    y_des = 0
     z_des = 1
     yaw_des = 0
     
@@ -85,13 +85,13 @@ if __name__ == '__main__':
             currentPosition = ardrone.get_pos()
             currentOrientation = ardrone.get_orient()
             #compute desired pose
-            dt = max((ardrone.get_time() - ardrone.time_stamp)/pow(10,9), 0.001)
+            dt = max((ardrone.get_time() - ardrone.time_stamp)/pow(10,9), 0.0001)
             ardrone.time_stamp = ardrone.get_time()
             traj = positionCtrl.getDesiredState(currentPosition, currentOrientation, x_des, y_des, z_des, yaw_des, dt)
             #publish actuation commands
             ardrone.set_vel(traj)
             #spin
-            ardrone.rate.sleep()            
+            ardrone.rate.sleep()           
     except KeyboardInterrupt:
         msg = Twist()
         msg.linear.x = 0
