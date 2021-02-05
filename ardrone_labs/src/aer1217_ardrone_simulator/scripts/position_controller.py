@@ -219,15 +219,18 @@ class PositionController(object):
         C_x = 4.6/(w_n_x*settling_time);
         C_y = 4.6/(w_n_y*settling_time);
         yaw_dot_P_gain = 1;
-        z_dot_P_gain = 0.1;
+        z_dot_P_gain = 0.08;
         
-        self.x_double_dot_des = 2*C_x*w_n_x*(self.x_dot_des - self.x_dot) + pow(w_n_x, 2)*(self.x_des - self.x)
-        self.y_double_dot_des = 2*C_y*w_n_y*(self.y_dot_des - self.y_dot) + pow(w_n_y, 2)*(self.y_des - self.y)
+        self.x_double_dot_des = 2*C_x*w_n_x*(self.x_dot_des - self.x_dot) + pow(w_n_x, 2)*(x_des - self.x)
+        self.y_double_dot_des = 2*C_y*w_n_y*(self.y_dot_des - self.y_dot) + pow(w_n_y, 2)*(y_des - self.y)
+        #self.x_double_dot_des = pow(w_n_x, 2)*(x_des - self.x)
+        #self.y_double_dot_des = pow(w_n_y, 2)*(y_des - self.y)
         
-        f = (self.z_double_dot - 9.8)/(np.cos(self.roll)*np.cos(self.pitch))
         
-        self.roll_des = np.arcsin(-self.y_double_dot/(f+1e-8)) 
-        self.pitch_des = np.arcsin(self.x_double_dot/(f*np.cos(self.roll_des)+1e-8)) # this line causes a warning that the argument to arcsin is invalid - could be a division by 0 in some cases. added a small term to avoid this
+        f = (self.z_double_dot + 9.8)/(np.cos(self.roll)*np.cos(self.pitch))
+        
+        self.roll_des = np.arcsin(-self.y_double_dot_des/(f+1e-8)) 
+        self.pitch_des = np.arcsin(self.x_double_dot_des/(f*np.cos(self.roll_des)+1e-8)) # this line causes a warning that the argument to arcsin is invalid - could be a division by 0 in some cases. added a small term to avoid this
 
         self.roll_des_base = self.roll_des*np.cos(self.yaw)+self.pitch_des*np.sin(self.yaw)
         self.pitch_des_base = -self.roll_des*np.sin(self.yaw) + self.pitch_des*np.cos(self.yaw)
@@ -236,7 +239,7 @@ class PositionController(object):
 
         #self.pitch_des_base = 0
             
-        self.yaw_dot_des = yaw_dot_P_gain*(yaw_des - self.yaw)
+        self.yaw_dot_des = yaw_dot_P_gain*(yaw_des - self.yaw) # TODO treat wraparound case
         self.z_dot_des = z_dot_P_gain*(z_des - self.z)
         
         msg = Twist()
