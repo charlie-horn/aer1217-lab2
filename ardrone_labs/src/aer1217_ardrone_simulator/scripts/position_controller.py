@@ -218,8 +218,8 @@ class PositionController(object):
         w_n_y = rise_time/1.8;
         C_x = 4.6/(w_n_x*settling_time);
         C_y = 4.6/(w_n_y*settling_time);
-        yaw_dot_P_gain = 1;
-        z_dot_P_gain = 0.08;
+        yaw_dot_P_gain = 0.01;
+        z_dot_P_gain = 0.5;
         
         self.x_double_dot_des = 2*C_x*w_n_x*(self.x_dot_des - self.x_dot) + pow(w_n_x, 2)*(x_des - self.x)
         self.y_double_dot_des = 2*C_y*w_n_y*(self.y_dot_des - self.y_dot) + pow(w_n_y, 2)*(y_des - self.y)
@@ -229,12 +229,18 @@ class PositionController(object):
         
         f = (self.z_double_dot + 9.8)/(np.cos(self.roll)*np.cos(self.pitch))
         
-        self.roll_des = np.arcsin(-self.y_double_dot_des/(f+1e-8)) 
-        self.pitch_des = np.arcsin(self.x_double_dot_des/(f*np.cos(self.roll_des)+1e-8)) # this line causes a warning that the argument to arcsin is invalid - could be a division by 0 in some cases. added a small term to avoid this
+        asin_arg_roll = max(-self.y_double_dot_des/(f+1e-8),-1)
+        asin_arg_roll = min(asin_arg_roll,1)        
+        self.roll_des = np.arcsin(asin_arg_roll)
+        
+        asin_arg_pitch = max(self.x_double_dot_des/(f*np.cos(self.roll_des)+1e-8),-1)
+        asin_arg_pitch = min(asin_arg_pitch,1)
+        self.pitch_des = np.arcsin(asin_arg_pitch) # this line causes a warning that the argument to arcsin is invalid - could be a division by 0 in some cases. added a small term to avoid this
 
         self.roll_des_base = self.roll_des*np.cos(self.yaw)+self.pitch_des*np.sin(self.yaw)
         self.pitch_des_base = -self.roll_des*np.sin(self.yaw) + self.pitch_des*np.cos(self.yaw)
         
+        print(self.roll_des_base)
         #self.roll_des_base = 0
 
         #self.pitch_des_base = 0
@@ -249,6 +255,8 @@ class PositionController(object):
         msg.linear.x = max(msg.linear.x,-1.0)
         msg.linear.y = max(msg.linear.y,-1.0)
         
+        #msg.linear.x = self.roll_des_base
+        #msg.linear.y = self.pitch_des_base
         msg.linear.z = self.z_dot_des
         msg.angular.z = self.yaw_dot_des
 

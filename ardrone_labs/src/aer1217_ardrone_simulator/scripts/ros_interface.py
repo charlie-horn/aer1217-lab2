@@ -32,7 +32,7 @@ class ROSControllerNode(object):
     # publish to /cmd_vel topic
     # subscribe to /vicon/ARDroneCarre/ARDroneCarre for position and attitude feedback
     def __init__(self):
-        self.rate = rospy.Rate(500)
+        self.rate = rospy.Rate(200)
         self.time_stamp = 0
         #Subscribers
         self.vicon_topic = '/vicon/ARDroneCarre/ARDroneCarre'
