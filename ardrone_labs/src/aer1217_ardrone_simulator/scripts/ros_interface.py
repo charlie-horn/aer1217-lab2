@@ -77,7 +77,7 @@ if __name__ == '__main__':
     x_des = 4
     y_des = 4
     z_des = 4
-    yaw_des = 0
+    yaw_des = 1
     
     try:
         while not rospy.is_shutdown():
