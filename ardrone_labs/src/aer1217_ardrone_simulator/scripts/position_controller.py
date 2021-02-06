@@ -212,22 +212,22 @@ class PositionController(object):
 #         self.yaw_dot_des = self.yaw_dot + yaw_P_gain*(yaw_des - self.yaw)
 #         self.z_dot_des = self.z_dot + z_P_gain*(z_des - self.z)
         
-        rise_time = 10;
-        settling_time = 20;
-        w_n_x = rise_time/1.8;
-        w_n_y = rise_time/1.8;
-        C_x = 4.6/(w_n_x*settling_time);
-        C_y = 4.6/(w_n_y*settling_time);
+        #rise_time = 10;
+        #settling_time = 20;
+        # w_n_x = rise_time/1.8;
+        # w_n_y = rise_time/1.8;
+        # C_x = 4.6/(w_n_x*settling_time);
+        # C_y = 4.6/(w_n_y*settling_time);
 
         # Gains
-        x_double_dot_P_gain = 0.08
-        x_double_dot_D_gain = 0.1
+        x_double_dot_P_gain = 0.59  #0.08
+        x_double_dot_D_gain = 1.4  #1.33 #0.1
 
-        y_double_dot_P_gain = 0.08
-        y_double_dot_D_gain = 0.1
+        y_double_dot_P_gain = 0.59 #0.08
+        y_double_dot_D_gain = 1.4 #1.33 #0.1
 
-        yaw_dot_P_gain = 1;
-        z_dot_P_gain = 0.05;
+        yaw_dot_P_gain = 0.5 #3 #1
+        z_dot_P_gain = 0.15 #0.05 0.74
         
         #self.x_double_dot_des = 2*C_x*w_n_x*(self.x_dot_des - self.x_dot) + pow(w_n_x, 2)*(x_des - self.x)
         #self.y_double_dot_des = 2*C_y*w_n_y*(self.y_dot_des - self.y_dot) + pow(w_n_y, 2)*(y_des - self.y)
@@ -256,13 +256,15 @@ class PositionController(object):
         yaw_error = yaw_des - self.yaw
         if yaw_error>np.pi:
             yaw_error = yaw_error - 2*np.pi
-        print(yaw_error)
+        #print(yaw_error)
+        #print(x_des)
         self.yaw_dot_des = yaw_dot_P_gain*yaw_error 
         self.z_dot_des = z_dot_P_gain*(z_des - self.z)
         
         msg = Twist()
         msg.linear.x = min(self.roll_des_base,1.0)
         msg.linear.y = min(self.pitch_des_base, 1.0)
+
         
         msg.linear.x = max(msg.linear.x,-1.0)
         msg.linear.y = max(msg.linear.y,-1.0)
