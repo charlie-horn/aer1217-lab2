@@ -22,7 +22,7 @@ class ROSDesiredPositionGenerator(object):
         self.vicon_topic = '/vicon/ARDroneCarre/ARDroneCarre'
         self.sub_vicon = rospy.Subscriber(self.vicon_topic, TransformStamped, self.get_vicon_data)
         self.pub_traj = rospy.Publisher('/desired_position', Twist, queue_size=10)
-        self.path_des = 'cir' #'lin'
+        self.path_des = 'lin' #'cir'
 
         self.freq = 3 #10 #50
 
@@ -37,10 +37,10 @@ class ROSDesiredPositionGenerator(object):
         self.z = 0
         self.yaw = 0
 
-        self.total_count = 100 #2
+        self.total_count = 50 # 50 points for linear, 100 points for circular
         self.thresh = 0.1
-        #self.linear(self.total_count/2)
-        self.circular(self.total_count / 2)
+        self.linear(self.total_count/2)
+        #self.circular(self.total_count / 2)
         self.traj_timer = rospy.Timer(rospy.Duration(1. / self.freq), self.pub_des_pos)
 
     def linear(self, n):
@@ -93,7 +93,7 @@ class ROSDesiredPositionGenerator(object):
 
         self.pub_traj.publish(msg)
         
-        if self.path_des == 'cir':
+        if self.path_des == 'cir' or self.path_des == 'lin':
             if  self.count == 0 or self.count == floor(self.total_count/2)-1:
                 update_count = self.check_dist(self.x_des[self.count], self.x) and \
                                self.check_dist(self.y_des[self.count], self.y) and \
