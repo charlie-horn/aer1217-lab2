@@ -58,16 +58,6 @@ class ROSControllerNode(object):
         
         print(x_des, y_des, z_des)
 
-        # self.x_des = msg.transform.translation.x
-        # self.y_des = msg.transform.translation.y
-        # self.z_des = msg.transform.translation.z
-        # quaternion_des = np.array([msg.transform.rotation.x,
-        #                            msg.transform.rotation.y,
-        #                            msg.transform.rotation.z,
-        #                            msg.transform.rotation.w])
-        # euler_des = euler_from_quaternion(quaternion_des)
-        # self.yaw_des = euler_des[2]
-
 
     def _vicon_callback(self, msg):
         self._vicon_msg = msg
@@ -131,5 +121,3 @@ if __name__ == '__main__':
         rospy.spin()
         
     rospy.spin()
-
-#     rospy.spin()
