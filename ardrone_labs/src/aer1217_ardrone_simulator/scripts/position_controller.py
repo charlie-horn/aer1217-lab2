@@ -160,16 +160,6 @@ class PositionController(object):
         return
 
     def getDesiredState(self, currentPosition, currentOrientation, x_des, y_des, z_des, yaw_des, dt):
-        try:
-            if x_des != self.x_des and x_des != 1.0:
-                self.old_x_des = self.x_des
-            if y_des != self.y_des and y_des != 0.0:
-                self.old_y_des = self.y_des
-        except AttributeError:
-            self.old_x_des = 1.0
-            self.old_y_des = 0.0
-
-        
         self.x_des = x_des
         self.y_des = y_des
 
@@ -212,8 +202,6 @@ class PositionController(object):
         elif yaw_error < -np.pi:
             yaw_error = yaw_error + 2*np.pi
         
-    
-   
         self.yaw_dot_des = yaw_dot_P_gain*yaw_error 
         self.z_dot_des = z_dot_P_gain*(z_des - self.z)
         
