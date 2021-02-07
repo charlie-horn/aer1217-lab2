@@ -22,9 +22,9 @@ class ROSDesiredPositionGenerator(object):
         self.vicon_topic = '/vicon/ARDroneCarre/ARDroneCarre'
         self.sub_vicon = rospy.Subscriber(self.vicon_topic, TransformStamped, self.get_vicon_data)
         self.pub_traj = rospy.Publisher('/desired_position', Twist, queue_size=10)
-        self.path_des = 'cir' #'cir'
+        #self.path_des = 'lin' #'cir'
 
-        self.freq = 4 #10 #50
+        self.freq = 3 #10 #50
 
         self.x_des = []
         self.y_des = []
@@ -37,14 +37,11 @@ class ROSDesiredPositionGenerator(object):
         self.z = 0
         self.yaw = 0
 
-        self.total_count = 100 #2 #10
+        self.total_count = 2 # 2 points for linear, 25 points for circular
         self.thresh = 0.1
         self.linear(self.total_count/2)
         #self.circular(self.total_count / 2)
         self.traj_timer = rospy.Timer(rospy.Duration(1. / self.freq), self.pub_des_pos)
-
-
-
 
     def linear(self, n):
         x1 = np.linspace(-1, 1, n)
@@ -60,22 +57,6 @@ class ROSDesiredPositionGenerator(object):
         self.z_des = np.concatenate((z1, z2))
 
         self.yaw_des = np.zeros(2*n) #?
-
-        # x1 = np.linspace(4, 4, n)
-        # x2 = np.linspace(4, 4, n)
-        # self.x_des = np.concatenate((x1, x2))
-        #
-        # y1 = np.linspace(4, 4, n)
-        # y2 = np.linspace(4, 4, n)
-        # self.y_des = np.concatenate((y1, y2))
-        #
-        # z1 = np.linspace(4, 4, n)
-        # z2 = np.linspace(4, 4, n)
-        # self.z_des = np.concatenate((z1, z2))
-        #
-        # self.yaw_des = np.ones(2*n)  # ?
-
-
 
     def circular(self, n):
         r = 1
@@ -104,17 +85,6 @@ class ROSDesiredPositionGenerator(object):
         self.yaw = euler[2]
 
     def pub_des_pos(self, i):
-        # msg = TransformStamped()
-        # msg.transform.translation.x = self.x_des[self.count]
-        # msg.transform.translation.y = self.y_des[self.count]
-        # msg.transform.translation.z = self.z_des[self.count]
-        #
-        # q = quaternion_from_euler(0, 0, self.yaw_des[self.count])
-        # msg.transform.rotation.x = q[0]
-        # msg.transform.rotation.y = q[1]
-        # msg.transform.rotation.z = q[2]
-        # msg.transform.rotation.w = q[3]
-
         msg = Twist()
         msg.linear.x = self.x_des[self.count]
         msg.linear.y = self.y_des[self.count]
@@ -123,22 +93,25 @@ class ROSDesiredPositionGenerator(object):
 
         self.pub_traj.publish(msg)
         
-        if self.path_des == 'cir':
-            if  self.count == 0 or self.count == floor(self.total_count/2)-1:
-                update_count = self.check_dist(self.x_des[self.count], self.x) and \
-                               self.check_dist(self.y_des[self.count], self.y) and \
-                               self.check_dist(self.z_des[self.count], self.z) and \
-                               self.yaw_check(self.yaw_des[self.count], self.yaw)
-            else:
-                update_count = 1
-        else:
-            update_count = self.check_dist(self.x_des[self.count], self.x) and \
-                           self.check_dist(self.y_des[self.count], self.y) and \
-                           self.check_dist(self.z_des[self.count], self.z) and \
-                           self.yaw_check(self.yaw_des[self.count], self.yaw)
+#         if self.path_des == 'cir' or self.path_des == 'lin':
+#             if  self.count == 0 or self.count == floor(self.total_count/2)-1:
+#                 update_count = self.check_dist(self.x_des[self.count], self.x) and \
+#                                self.check_dist(self.y_des[self.count], self.y) and \
+#                                self.check_dist(self.z_des[self.count], self.z) and \
+#                                self.yaw_check(self.yaw_des[self.count], self.yaw)
+#             else:
+#                 update_count = 1
+#         else:
+#             update_count = self.check_dist(self.x_des[self.count], self.x) and \
+#                            self.check_dist(self.y_des[self.count], self.y) and \
+#                            self.check_dist(self.z_des[self.count], self.z) and \
+#                            self.yaw_check(self.yaw_des[self.count], self.yaw)
 
-        #print('count = {}'.format(self.count))
-        #print(len(self.x_des))
+        update_count = self.check_dist(self.x_des[self.count], self.x) and \
+                       self.check_dist(self.y_des[self.count], self.y) and \
+                       self.check_dist(self.z_des[self.count], self.z) and \
+                       self.yaw_check(self.yaw_des[self.count], self.yaw)
+
         if update_count:
             if self.count < self.total_count-1:
                 self.count += 1
@@ -147,10 +120,6 @@ class ROSDesiredPositionGenerator(object):
                 print('z = '.format(self.z_des[self.count]))
             else:
                 self.count = 0
-    #
-    # def full_traj (n):
-    #     (x_linear, y_linear, z_linear, yaw) = PosGen.linear(n)
-    #
 
     # check distance of desired and actual value to determine if proceed
     def check_dist(self, des, act):
@@ -168,17 +137,7 @@ class ROSDesiredPositionGenerator(object):
         else:
             return True
 
-
-
-
 if __name__ == '__main__':
     rospy.init_node('desired_positions')
     ROSDesiredPositionGenerator()
     rospy.spin()
-
-
-#     pos = ROSControllerNode.get_pos()
-#     ori = ROSControllerNode.get_orient()
-#     x = pos.x
-#     y = pos.y
-#     z = pos.z

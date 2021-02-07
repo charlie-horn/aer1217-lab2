@@ -17,6 +17,9 @@ from geometry_msgs.msg import TransformStamped, Twist
 class PositionController(object):
     """ROS interface for controlling the Parrot ARDrone in the Vicon Lab."""
     def __init__(self):
+        # Internal state
+        self.internal_state = TransformStamped()
+        
         ## Current State
         
         # Position
@@ -68,21 +71,12 @@ class PositionController(object):
         
         # Position
 
-        #self.x_des = 0
-        #self.y_des = 0
+        self.x_des = 0
+        self.y_des = 0
         self.z_des = 0
         self.roll_des = 0
         self.pitch_des = 0
         self.yaw_des = 0
-
-        # Old position
-
-        #self.old_x_des = 0
-        #self.old_y_des = 0
-        self.old_z_des = 0
-        self.old_roll_des = 0
-        self.old_pitch_des = 0
-        self.old_yaw_des = 0
 
         # Velocity
 
@@ -120,7 +114,7 @@ class PositionController(object):
         self.old_z = self.z
         self.z = currentPosition.z
         
-        self.old_roll = self.roll  
+        self.old_roll = self.roll
         self.roll = currentOrientation[0]
         
         self.old_pitch = self.pitch
@@ -128,17 +122,15 @@ class PositionController(object):
         
         self.old_yaw = self.yaw
         self.yaw = currentOrientation[2]
-        
+
         return
 
     def updateVelocity(self, dt):
         self.old_x_dot = self.x_dot
         self.x_dot = (self.x - self.old_x)/dt
 
-
         self.old_y_dot = self.y_dot
         self.y_dot = (self.y - self.old_y)/dt
-
 
         self.old_z_dot = self.z_dot
         self.z_dot = (self.z - self.old_z)/dt
@@ -160,11 +152,8 @@ class PositionController(object):
         return
 
     def getDesiredState(self, currentPosition, currentOrientation, x_des, y_des, z_des, yaw_des, dt):
-        self.x_des = x_des
-        self.y_des = y_des
 
         self.updateState(currentPosition, currentOrientation, dt)
-
 
         # Gains
         x_double_dot_P_gain = 0.59  #0.08
@@ -175,15 +164,12 @@ class PositionController(object):
 
         yaw_dot_P_gain = 0.5 #3 #1
         z_dot_P_gain = 0.15 #0.05 0.74
-        
-        # X and Y acceleration
+
         self.x_double_dot_des = x_double_dot_D_gain*(self.x_dot_des - self.x_dot) + x_double_dot_P_gain*(x_des - self.x)
         self.y_double_dot_des = y_double_dot_D_gain*(self.y_dot_des - self.y_dot) + y_double_dot_P_gain*(y_des - self.y)
         
-        # Force 
         f = (self.z_double_dot + 9.8)/(np.cos(self.roll)*np.cos(self.pitch))
         
-        # Roll and pitch
         asin_arg_roll = max(-self.y_double_dot_des/(f+1e-8),-1)
         asin_arg_roll = min(asin_arg_roll,1)        
         self.roll_des = np.arcsin(asin_arg_roll)
@@ -194,8 +180,7 @@ class PositionController(object):
 
         self.roll_des_base = self.roll_des*np.cos(self.yaw)+self.pitch_des*np.sin(self.yaw)
         self.pitch_des_base = -self.roll_des*np.sin(self.yaw) + self.pitch_des*np.cos(self.yaw)
-       
-        # Yaw_dot
+
         yaw_error = yaw_des - self.yaw
         if yaw_error > np.pi:
             yaw_error = yaw_error - 2*np.pi
@@ -205,8 +190,6 @@ class PositionController(object):
         self.yaw_dot_des = yaw_dot_P_gain*yaw_error 
         self.z_dot_des = z_dot_P_gain*(z_des - self.z)
         
-
-        # Published message
         msg = Twist()
         msg.linear.x = min(self.roll_des_base,1.0)
         msg.linear.y = min(self.pitch_des_base, 1.0)
@@ -214,13 +197,10 @@ class PositionController(object):
         
         msg.linear.x = max(msg.linear.x,-1.0)
         msg.linear.y = max(msg.linear.y,-1.0)
-        
-        #msg.linear.x = self.roll_des_base
-        #msg.linear.y = self.pitch_des_base
+
         msg.linear.z = self.z_dot_des
         msg.angular.z = self.yaw_dot_des
 
-        #return self.roll_des_base, self.pitch_des_base, self.yaw_dot_des, self.z_dot_des
         return msg
 
 
