@@ -105,6 +105,8 @@ class PositionController(object):
         self.yaw_des = 0
 
         # Velocity
+        self.old_x_des = 0
+        self.old_y_des = 0
 
         self.x_dot_des = 0
         self.y_dot_des = 0
@@ -188,6 +190,9 @@ class PositionController(object):
         return
 
     def getDesiredState(self, currentPosition, currentOrientation, x_des, y_des, z_des, yaw_des, dt):
+
+        self.x_dot_des = (x_des - self.old_x_des) / dt
+        self.y_dot_des = (y_des - self.old_y_des) / dt
 
         self.updateState(currentPosition, currentOrientation, dt)
 
@@ -275,6 +280,10 @@ class PositionController(object):
         msg.angular.z = self.yaw_dot_des
 
         #return self.roll_des_base, self.pitch_des_base, self.yaw_dot_des, self.z_dot_des
+
+        self.old_x_des = x_des
+        self.old_y_des = y_des
+
         return msg
 
 

@@ -37,8 +37,8 @@ class ROSDesiredPositionGenerator(object):
 
         self.total_count = 100
         self.thresh = 0.1
-        #self.linear(self.total_count/2)
-        self.circular(self.total_count / 2)
+        self.linear(self.total_count/2)
+        #self.circular(self.total_count / 2)
         self.traj_timer = rospy.Timer(rospy.Duration(1. / self.freq), self.pub_des_pos)
 
 
