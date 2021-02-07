@@ -1,24 +1,3 @@
-# #!/usr/bin/env python2
-# 
-# """Class for writing position controller."""
-# 
-# from __future__ import division, print_function, absolute_import
-# 
-# # Import ROS libraries
-# import roslib
-# import rospy
-# import numpy as np
-# 
-# # Import class that computes the desired positions
-# from tf.transformations import euler_from_quaternion
-# from geometry_msgs.msg import TransformStamped, Twist
-# 
-# 
-# class PositionController(object):
-#     """ROS interface for controlling the Parrot ARDrone in the Vicon Lab."""
-#     # write code here for position controller
-#     pass
-
 #!/usr/bin/env python2
 
 """Class for writing position controller."""
@@ -152,7 +131,6 @@ class PositionController(object):
         self.pitch = currentOrientation[1]
         
         self.old_yaw = self.yaw
-        #self.yaw = self.internal_state.transform.angular.z
         self.yaw = currentOrientation[2]
 
         return
@@ -276,6 +254,7 @@ class PositionController(object):
 
         #return self.roll_des_base, self.pitch_des_base, self.yaw_dot_des, self.z_dot_des
         return msg
+
 
 
 

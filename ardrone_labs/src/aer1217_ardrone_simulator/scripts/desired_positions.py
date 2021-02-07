@@ -13,6 +13,7 @@ from geometry_msgs.msg import TransformStamped, Twist
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 from ros_interface import ROSControllerNode
+from numpy import floor
 
 class ROSDesiredPositionGenerator(object):
     """ROS interface for publishing desired positions."""
@@ -21,8 +22,9 @@ class ROSDesiredPositionGenerator(object):
         self.vicon_topic = '/vicon/ARDroneCarre/ARDroneCarre'
         self.sub_vicon = rospy.Subscriber(self.vicon_topic, TransformStamped, self.get_vicon_data)
         self.pub_traj = rospy.Publisher('/desired_position', Twist, queue_size=10)
+        self.path_des = 'cir' #'cir'
 
-        self.freq = 2000
+        self.freq = 4 #10 #50
 
         self.x_des = []
         self.y_des = []
@@ -35,7 +37,7 @@ class ROSDesiredPositionGenerator(object):
         self.z = 0
         self.yaw = 0
 
-        self.total_count = 100
+        self.total_count = 100 #2 #10
         self.thresh = 0.1
         #self.linear(self.total_count/2)
         self.circular(self.total_count / 2)
@@ -120,11 +122,21 @@ class ROSDesiredPositionGenerator(object):
         msg.angular.z = self.yaw_des[self.count]
 
         self.pub_traj.publish(msg)
+        
+        if self.path_des == 'cir':
+            if  self.count == 0 or self.count == floor(self.total_count/2)-1:
+                update_count = self.check_dist(self.x_des[self.count], self.x) and \
+                               self.check_dist(self.y_des[self.count], self.y) and \
+                               self.check_dist(self.z_des[self.count], self.z) and \
+                               self.yaw_check(self.yaw_des[self.count], self.yaw)
+            else:
+                update_count = 1
+        else:
+            update_count = self.check_dist(self.x_des[self.count], self.x) and \
+                           self.check_dist(self.y_des[self.count], self.y) and \
+                           self.check_dist(self.z_des[self.count], self.z) and \
+                           self.yaw_check(self.yaw_des[self.count], self.yaw)
 
-        update_count = self.check_dist(self.x_des[self.count], self.x) and \
-                       self.check_dist(self.y_des[self.count], self.y) and \
-                       self.check_dist(self.z_des[self.count], self.z) and \
-                       self.yaw_check(self.yaw_des[self.count], self.yaw)
         #print('count = {}'.format(self.count))
         #print(len(self.x_des))
         if update_count:
