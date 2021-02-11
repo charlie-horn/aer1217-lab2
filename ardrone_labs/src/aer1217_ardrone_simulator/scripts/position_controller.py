@@ -17,8 +17,6 @@ from geometry_msgs.msg import TransformStamped, Twist
 class PositionController(object):
     """ROS interface for controlling the Parrot ARDrone in the Vicon Lab."""
     def __init__(self):
-        # Internal state
-        self.internal_state = TransformStamped()
         
         ## Current State
         
@@ -105,6 +103,7 @@ class PositionController(object):
         return
 
     def updatePosition(self, currentPosition, currentOrientation):
+        # Update positions
         self.old_x = self.x
         self.x = currentPosition.x
         
@@ -126,6 +125,8 @@ class PositionController(object):
         return
 
     def updateVelocity(self, dt):
+        # Numerical derivative for current velocities
+
         self.old_x_dot = self.x_dot
         self.x_dot = (self.x - self.old_x)/dt
 
@@ -146,6 +147,7 @@ class PositionController(object):
         return
 
     def updateAcceleration(self, dt):
+        # Numerical derivative for current accelerations
         self.x_double_dot = (self.x_dot - self.old_x_dot)/dt
         self.y_double_dot = (self.y_dot - self.old_y_dot)/dt
         self.z_double_dot = (self.z_dot - self.old_z_dot)/dt
@@ -156,30 +158,38 @@ class PositionController(object):
         self.updateState(currentPosition, currentOrientation, dt)
 
         # Gains
-        x_double_dot_P_gain = 0.59  #0.08
-        x_double_dot_D_gain = 1.4  #1.33 #0.1
+        x_double_dot_P_gain = 0.59  
+        x_double_dot_D_gain = 1.4
 
-        y_double_dot_P_gain = 0.59 #0.08
-        y_double_dot_D_gain = 1.4 #1.33 #0.1
+        y_double_dot_P_gain = 0.59
+        y_double_dot_D_gain = 1.4
 
-        yaw_dot_P_gain = 0.5 #3 #1
-        z_dot_P_gain = 0.15 #0.05 0.74
+        yaw_dot_P_gain = 0.5
+        z_dot_P_gain = 0.15 
 
         self.x_double_dot_des = x_double_dot_D_gain*(self.x_dot_des - self.x_dot) + x_double_dot_P_gain*(x_des - self.x)
         self.y_double_dot_des = y_double_dot_D_gain*(self.y_dot_des - self.y_dot) + y_double_dot_P_gain*(y_des - self.y)
         
         f = (self.z_double_dot + 9.8)/(np.cos(self.roll)*np.cos(self.pitch))
         
+        # Desired Roll
+
         asin_arg_roll = max(-self.y_double_dot_des/(f+1e-8),-1)
         asin_arg_roll = min(asin_arg_roll,1)        
         self.roll_des = np.arcsin(asin_arg_roll)
+
+        # Desired Pitch
         
         asin_arg_pitch = max(self.x_double_dot_des/(f*np.cos(self.roll_des)+1e-8),-1)
         asin_arg_pitch = min(asin_arg_pitch,1)
         self.pitch_des = np.arcsin(asin_arg_pitch) 
 
+        # Convert to base reference frame
+
         self.roll_des_base = self.roll_des*np.cos(self.yaw)+self.pitch_des*np.sin(self.yaw)
         self.pitch_des_base = -self.roll_des*np.sin(self.yaw) + self.pitch_des*np.cos(self.yaw)
+
+        # Desired Yaw dot
 
         yaw_error = yaw_des - self.yaw
         if yaw_error > np.pi:
@@ -188,8 +198,13 @@ class PositionController(object):
             yaw_error = yaw_error + 2*np.pi
         
         self.yaw_dot_des = yaw_dot_P_gain*yaw_error 
+
+        # Desired Z Dot
+
         self.z_dot_des = z_dot_P_gain*(z_des - self.z)
         
+        # Assemble the message object to send to the onboard controller
+
         msg = Twist()
         msg.linear.x = min(self.roll_des_base,1.0)
         msg.linear.y = min(self.pitch_des_base, 1.0)
