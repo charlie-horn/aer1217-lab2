@@ -51,6 +51,7 @@ class ROSControllerNode(object):
         self.pub_land = rospy.Publisher('/ardrone/land', Empty, queue_size=1)
 
     def _traj_callback(self, msg):
+        # callback function for saving desired position and orientation from planner node
         self.x_des = msg.linear.x
         self.y_des = msg.linear.y
         self.z_des = msg.linear.z
@@ -60,12 +61,15 @@ class ROSControllerNode(object):
 
 
     def _vicon_callback(self, msg):
+        # callback for getting the current drone state from the vicon system
         self._vicon_msg = msg
         
     def get_pos(self):
+        # get current drone position
         return self._vicon_msg.transform.translation
     
     def get_orient(self):
+        # get current orientation and convert to euler 
         orient_qx = self._vicon_msg.transform.rotation.x
         orient_qy = self._vicon_msg.transform.rotation.y
         orient_qz = self._vicon_msg.transform.rotation.z
@@ -74,20 +78,28 @@ class ROSControllerNode(object):
         return euler_from_quaternion(orient_q)
     
     def get_time(self):
+        # get current time
         return self._vicon_msg.header.stamp.nsecs
     
     def land(self):
+        # publish landing command
         self.pub_land.publish()
 
     def set_vel(self, traj):
+        # publish trajectory
         self.pub_traj.publish(traj)
 
 if __name__ == '__main__':
     # write code to create ROSControllerNode
+    
+    # initiate node
     rospy.init_node("ros_interface", disable_signals=True)
+    
+    # initiate controller and ardrone objects
     positionCtrl = PositionController()
     ardrone = ROSControllerNode()
     # ardrone.time_stamp = ardrone.get_time()
+    
     #first test
     # x_des = 4
     # y_des = 4
@@ -101,9 +113,10 @@ if __name__ == '__main__':
             currentPosition = ardrone.get_pos()
             currentOrientation = ardrone.get_orient()
             #compute desired pose
-            dt = max((ardrone.get_time() - ardrone.time_stamp)/pow(10,9), 0.0001)
-            ardrone.time_stamp = ardrone.get_time()
+            dt = max((ardrone.get_time() - ardrone.time_stamp)/pow(10,9), 0.0001) # time duration
+            ardrone.time_stamp = ardrone.get_time() 
             x_des, y_des, z_des, yaw_des = ardrone.x_des, ardrone.y_des, ardrone.z_des, ardrone.yaw_des
+            # get trajectory command
             traj = positionCtrl.getDesiredState(currentPosition, currentOrientation, x_des, y_des, z_des, yaw_des, dt)
             #publish actuation commands
             ardrone.set_vel(traj)
